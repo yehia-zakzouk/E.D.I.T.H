@@ -21,5 +21,7 @@ class FileParser:
             path=file,
             size=file.stat().st_size,
             lines=len(text.splitlines()),
-            hash=file_hash
+            hash=file_hash,
+            last_modified=file.stat().st_mtime,
+            language=file.suffix.lower().lstrip('.') or None
         )

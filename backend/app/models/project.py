@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 from pydantic import BaseModel, Field
 
 from app.models.file_index import FileIndex
@@ -7,6 +8,8 @@ from app.graph.repository_graph import RepositoryGraph
 
 
 class Project(BaseModel):
+
+    id: Optional[int] = None
 
     root: Path
 
@@ -20,9 +23,9 @@ class Project(BaseModel):
 
     graph: RepositoryGraph = Field(default_factory=RepositoryGraph)
 
-    build_system: str | None = None
-    database: str | None = None
-    testing_framework: str | None = None
+    build_system: Optional[str] = None
+    database: Optional[str] = None
+    testing_framework: Optional[str] = None
 
     docker: bool = False
     git: bool = False

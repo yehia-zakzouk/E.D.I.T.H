@@ -20,14 +20,14 @@ class DependencyBuilder:
 
             module = ".".join(relative.with_suffix("").parts)
 
-            module_lookup[module] = file.path.name
+            module_lookup[module] = relative.as_posix()
 
         # Build dependencies
         for file in project.indexed_files:
 
             relative = file.path.relative_to(project.root)
 
-            source = relative.name
+            source = relative.as_posix()
 
             for imp in file.analysis.imports:
 

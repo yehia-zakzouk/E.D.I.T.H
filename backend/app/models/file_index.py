@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Optional
 
 from app.models.file_analysis import FileAnalysis
 
@@ -14,4 +15,10 @@ class FileIndex:
 
     hash: str
 
-    analysis: FileAnalysis | None = None
+    last_modified: float
+
+    id: Optional[int] = None
+
+    language: Optional[str] = None
+
+    analysis: Optional[FileAnalysis] = None

@@ -1,11 +1,12 @@
 from pathlib import Path
 
 from app.models.project import Project
+from app.database.database import DatabaseManager
 print(Project.model_fields.keys())
 from app.services.scanner import RepositoryScanner
 from app.services.detector import ProjectDetector
 from app.services.indexer import RepositoryIndexer
-from app.services.repository_analyzer import RepositoryAnalyzer
+from app.services.knowledge_extractor import KnowledgeExtractor
 
 
 
@@ -59,7 +60,7 @@ def main():
     scanner = RepositoryScanner()
     detector = ProjectDetector()
     indexer = RepositoryIndexer()
-    analyzer = RepositoryAnalyzer()
+    analyzer = KnowledgeExtractor()
 
     print("🔍 Scanning repository...")
     project.files = scanner.scan(str(project.root))
@@ -70,7 +71,7 @@ def main():
     print("📚 Indexing files...")
     project = indexer.index(project)
 
-    print("🧩 Analyzing code...")
+    print("🧩 Extracting knowledge...")
     project = analyzer.analyze(project)
 
     print("\n========== PROJECT SUMMARY ==========")
@@ -108,7 +109,8 @@ def main():
 
     for edge in project.graph.edges[:20]:
      print(f"{edge.source} --{edge.relation.value}--> {edge.target}") 
-
+db = DatabaseManager("edith.db")
+db.initialize()
 
 if __name__ == "__main__":
     main()
