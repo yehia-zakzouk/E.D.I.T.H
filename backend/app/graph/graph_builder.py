@@ -22,81 +22,94 @@ class GraphBuilder:
             if file.analysis is None:
                 continue
 
-            # Classes
-            for cls in file.analysis.classes:
+            existing_nodes = {node.id for node in graph.nodes}
 
-                class_id = f"{file.path}:{cls}"
-
-                graph.nodes.append(
-                    GraphNode(
-                        id=class_id,
-                        type=NodeType.CLASS,
-                        name=cls
-                    )
+            # Symbol nodes
+            for symbol in file.analysis.symbols:
+                symbol_id = f"{file.path}:{symbol.qualified_name}"
+                node_type = NodeType.METHOD if symbol.kind in ("method", "async_method") else (
+                    NodeType.CLASS if symbol.kind == "class" else NodeType.FUNCTION
                 )
+
+                if symbol_id not in existing_nodes:
+                    graph.nodes.append(
+                        GraphNode(
+                            id=symbol_id,
+                            type=node_type,
+                            name=symbol.qualified_name,
+                            lineno=symbol.line,
+                            docstring=symbol.docstring,
+                        )
+                    )
+                    existing_nodes.add(symbol_id)
 
                 graph.edges.append(
                     GraphEdge(
                         source=file_node.id,
-                        target=class_id,
+                        target=symbol_id,
                         relation=EdgeType.CONTAINS
                     )
                 )
 
-            # Functions
-            for func in file.analysis.functions:
+            # Call graph edges
+            for call in file.analysis.calls:
+                caller_id = f"{file.path}:{call.caller}"
+                callee_id = f"call:{call.callee}"
 
-                func_id = f"{file.path}:{func}"
-
-                graph.nodes.append(
-                    GraphNode(
-                        id=func_id,
-                        type=NodeType.FUNCTION,
-                        name=func
+                if callee_id not in existing_nodes:
+                    graph.nodes.append(
+                        GraphNode(
+                            id=callee_id,
+                            type=NodeType.FUNCTION,
+                            name=call.callee,
+                        )
                     )
-                )
+                    existing_nodes.add(callee_id)
 
                 graph.edges.append(
                     GraphEdge(
-                        source=file_node.id,
-                        target=func_id,
-                        relation=EdgeType.CONTAINS
+                        source=caller_id,
+                        target=callee_id,
+                        relation=EdgeType.CALLS
                     )
                 )
 
-            # Methods
-            for method in file.analysis.methods:
+            # Inheritance edges
+            for inheritance in file.analysis.inheritance_relations:
+                child_id = f"{file.path}:{inheritance.child}"
+                parent_id = f"inherit:{inheritance.parent}"
 
-                method_id = f"{file.path}:{method}"
-
-                graph.nodes.append(
-                    GraphNode(
-                        id=method_id,
-                        type=NodeType.METHOD,
-                        name=method
+                if parent_id not in existing_nodes:
+                    graph.nodes.append(
+                        GraphNode(
+                            id=parent_id,
+                            type=NodeType.CLASS,
+                            name=inheritance.parent,
+                        )
                     )
-                )
+                    existing_nodes.add(parent_id)
 
                 graph.edges.append(
                     GraphEdge(
-                        source=file_node.id,
-                        target=method_id,
-                        relation=EdgeType.CONTAINS
+                        source=child_id,
+                        target=parent_id,
+                        relation=EdgeType.INHERITS
                     )
                 )
 
             # Imports
             for imp in file.analysis.imports:
-
                 module_id = f"module:{imp}"
 
-                graph.nodes.append(
-                    GraphNode(
-                        id=module_id,
-                        type=NodeType.MODULE,
-                        name=imp
+                if module_id not in existing_nodes:
+                    graph.nodes.append(
+                        GraphNode(
+                            id=module_id,
+                            type=NodeType.MODULE,
+                            name=imp
+                        )
                     )
-                )
+                    existing_nodes.add(module_id)
 
                 graph.edges.append(
                     GraphEdge(

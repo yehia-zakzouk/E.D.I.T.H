@@ -1,7 +1,10 @@
+from dataclasses import asdict
 from pathlib import Path
+import json
 import sqlite3
 
 from app.database.repositories.base_repository import BaseRepository
+from app.models.file_analysis import FileAnalysis
 from app.models.file_index import FileIndex
 
 
@@ -51,9 +54,10 @@ class FileRepository(BaseRepository):
                 language,
                 size,
                 lines,
-                last_modified
+                last_modified,
+                analysis_data
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 project_id,
@@ -63,10 +67,9 @@ class FileRepository(BaseRepository):
                 file.size,
                 file.lines,
                 file.last_modified,
+                json.dumps(asdict(file.analysis), default=str) if file.analysis is not None else None,
             ),
         )
-
-        self.commit()
 
         return cursor.lastrowid
 
@@ -80,7 +83,8 @@ class FileRepository(BaseRepository):
                 language = ?,
                 size = ?,
                 lines = ?,
-                last_modified = ?
+                last_modified = ?,
+                analysis_data = ?
             WHERE project_id = ?
               AND path = ?
             """,
@@ -90,12 +94,11 @@ class FileRepository(BaseRepository):
                 file.size,
                 file.lines,
                 file.last_modified,
+                json.dumps(asdict(file.analysis), default=str) if file.analysis is not None else None,
                 project_id,
                 relative_path,
             ),
         )
-
-        self.commit()
 
         cursor.execute(
             """
@@ -115,7 +118,7 @@ class FileRepository(BaseRepository):
 
         cursor.execute(
             """
-            SELECT id, path, hash, language, size, lines, last_modified
+            SELECT id, path, hash, language, size, lines, last_modified, analysis_data
             FROM files
             WHERE project_id = ?
             """,
@@ -126,16 +129,23 @@ class FileRepository(BaseRepository):
         files = []
 
         for row in rows:
-            files.append(
-                FileIndex(
-                    id=row["id"],
-                    path=project_root / row["path"],
-                    hash=row["hash"],
-                    language=row["language"],
-                    size=row["size"],
-                    lines=row["lines"],
-                    last_modified=row["last_modified"],
-                )
+            file = FileIndex(
+                id=row["id"],
+                path=project_root / row["path"],
+                hash=row["hash"],
+                language=row["language"],
+                size=row["size"],
+                lines=row["lines"],
+                last_modified=row["last_modified"],
             )
+
+            if row["analysis_data"]:
+                try:
+                    analysis_dict = json.loads(row["analysis_data"])
+                    file.analysis = FileAnalysis.from_dict(analysis_dict)
+                except Exception:
+                    file.analysis = None
+
+            files.append(file)
 
         return files

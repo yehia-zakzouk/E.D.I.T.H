@@ -21,13 +21,25 @@ class SymbolRepository(BaseRepository):
             (file_id, name, kind, line),
         )
 
-        self.commit()
-
         return cursor.lastrowid
 
     def save_many(self, file_id: int, symbols: list[tuple[str, str, Optional[int]]]):
         for name, kind, line in symbols:
             self.save(file_id, name, kind, line)
+
+    def load_by_file(self, file_id: int) -> list[tuple[str, str, Optional[int]]]:
+        cursor = self.get_cursor()
+
+        cursor.execute(
+            """
+            SELECT name, kind, line
+            FROM symbols
+            WHERE file_id = ?
+            """,
+            (file_id,),
+        )
+
+        return [(row["name"], row["kind"], row["line"]) for row in cursor.fetchall()]
 
     def delete_by_file(self, file_id: int):
         cursor = self.get_cursor()
@@ -39,5 +51,3 @@ class SymbolRepository(BaseRepository):
             """,
             (file_id,),
         )
-
-        self.commit()

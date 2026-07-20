@@ -26,7 +26,6 @@ class TechnologyRepository(BaseRepository):
             [(project_id, category, name) for category, name in technologies],
         )
 
-        self.commit()
 
     def load_by_project(self, project_id: int) -> list[tuple[str, str]]:
         cursor = self.get_cursor()

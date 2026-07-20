@@ -22,3 +22,4 @@ class FileIndex:
     language: Optional[str] = None
 
     analysis: Optional[FileAnalysis] = None
+    metrics: Optional[dict[str, float | int]] = None

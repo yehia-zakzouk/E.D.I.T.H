@@ -35,7 +35,6 @@ class MetricsRepository(BaseRepository):
                 (file_id, todo_count, function_count, class_count, complexity),
             )
 
-        self.commit()
 
     def exists(self, file_id: int) -> bool:
         cursor = self.get_cursor()

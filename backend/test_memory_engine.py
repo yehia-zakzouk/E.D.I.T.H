@@ -37,6 +37,8 @@ def test_memory_engine_save_and_load():
             assert loaded_project.root == saved_project.root
             assert loaded_project.docker == saved_project.docker
             assert loaded_project.git == saved_project.git
+            assert loaded_project.relationships == saved_project.relationships
+            assert loaded_project.dependencies == saved_project.dependencies
         finally:
             db.close()
 

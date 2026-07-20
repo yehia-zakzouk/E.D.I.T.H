@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 from app.models.file_index import FileIndex
 from app.models.dependency import Dependency
+from app.models.relationship import Relationship
 from app.graph.repository_graph import RepositoryGraph
 
 
@@ -20,6 +21,7 @@ class Project(BaseModel):
     frameworks: list[str] = Field(default_factory=list)
 
     dependencies: list[Dependency] = Field(default_factory=list)
+    relationships: list[Relationship] = Field(default_factory=list)
 
     graph: RepositoryGraph = Field(default_factory=RepositoryGraph)
 

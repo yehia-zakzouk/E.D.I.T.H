@@ -27,7 +27,6 @@ class RelationshipRepository(BaseRepository):
             [(project_id, source_id, target_id, relation) for source_id, target_id, relation in relationships],
         )
 
-        self.commit()
 
     def load_by_project(self, project_id: int) -> list[tuple[int, int, str]]:
         cursor = self.get_cursor()

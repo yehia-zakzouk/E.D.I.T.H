@@ -15,6 +15,8 @@ class DatabaseSchema:
         self.create_files_table()
         self.create_symbols_table()
         self.create_relationships_table()
+        self.create_calls_table()
+        self.create_inheritance_table()
         self.create_metrics_table()
         self.create_project_technologies_table()
         self.create_indexes()
@@ -62,6 +64,8 @@ class DatabaseSchema:
             lines INTEGER,
 
             last_modified REAL,
+
+            analysis_data TEXT,
 
             FOREIGN KEY(project_id)
                 REFERENCES projects(id)
@@ -114,6 +118,48 @@ class DatabaseSchema:
                 ON DELETE CASCADE,
 
             FOREIGN KEY(target_file_id)
+                REFERENCES files(id)
+                ON DELETE CASCADE
+        );
+        """)
+
+    def create_calls_table(self):
+        cursor = self.connection.cursor()
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS calls (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            file_id INTEGER NOT NULL,
+
+            caller TEXT NOT NULL,
+
+            callee TEXT NOT NULL,
+
+            line INTEGER,
+
+            FOREIGN KEY(file_id)
+                REFERENCES files(id)
+                ON DELETE CASCADE
+        );
+        """)
+
+    def create_inheritance_table(self):
+        cursor = self.connection.cursor()
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS inheritance_relations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            file_id INTEGER NOT NULL,
+
+            child TEXT NOT NULL,
+
+            parent TEXT NOT NULL,
+
+            line INTEGER,
+
+            FOREIGN KEY(file_id)
                 REFERENCES files(id)
                 ON DELETE CASCADE
         );
@@ -196,6 +242,16 @@ class DatabaseSchema:
         cursor.execute("""
          CREATE INDEX IF NOT EXISTS idx_relationships_target_file
          ON relationships(target_file_id);
+         """)
+
+        cursor.execute("""
+         CREATE INDEX IF NOT EXISTS idx_calls_file
+         ON calls(file_id);
+         """)
+
+        cursor.execute("""
+         CREATE INDEX IF NOT EXISTS idx_inheritance_file
+         ON inheritance_relations(file_id);
          """)
 
         cursor.execute("""

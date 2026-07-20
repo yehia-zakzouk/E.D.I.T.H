@@ -57,8 +57,6 @@ class ProjectRepository(BaseRepository):
             ),
         )
 
-        self.connection.commit()
-
         return cursor.lastrowid
 
     def update(self, project: Project) -> int:
@@ -78,8 +76,6 @@ class ProjectRepository(BaseRepository):
                 str(project.root),
             ),
         )
-
-        self.connection.commit()
 
         cursor.execute(
             """
@@ -135,5 +131,3 @@ class ProjectRepository(BaseRepository):
             """,
             (path,),
         )
-
-        self.connection.commit()

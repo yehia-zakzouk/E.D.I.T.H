@@ -2,6 +2,7 @@ from pathlib import Path
 
 from app.models.dependency import Dependency
 from app.models.project import Project
+from app.models.relationship import Relationship
 
 
 class DependencyBuilder:
@@ -9,6 +10,7 @@ class DependencyBuilder:
     def build(self, project: Project) -> Project:
 
         project.dependencies.clear()
+        project.relationships.clear()
 
         # Build a lookup table:
         # "app.services.indexer" -> "indexer.py"
@@ -47,13 +49,12 @@ class DependencyBuilder:
                             break
 
                 if target:
-
-                    project.dependencies.append(
-                        Dependency(
-                            source=source,
-                            target=target,
-                            kind="import"
-                        )
+                    dependency = Dependency(
+                        source=source,
+                        target=target,
+                        kind="import"
                     )
+                    project.dependencies.append(dependency)
+                    project.relationships.append(Relationship(source=source, target=target, kind="import"))
 
         return project
