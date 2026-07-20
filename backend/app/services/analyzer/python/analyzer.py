@@ -1,9 +1,9 @@
 import ast
 
+from app.services.analyzer.base import BaseAnalyzer
 from app.models.file_analysis import FileAnalysis
 
-
-class SymbolExtractor(ast.NodeVisitor):
+class PythonAnalyzer(ast.NodeVisitor):
 
     def __init__(self):
         self.analysis = FileAnalysis()

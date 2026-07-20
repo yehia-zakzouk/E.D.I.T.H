@@ -1,10 +1,12 @@
 from pathlib import Path
 
 from app.models.project import Project
+print(Project.model_fields.keys())
 from app.services.scanner import RepositoryScanner
 from app.services.detector import ProjectDetector
 from app.services.indexer import RepositoryIndexer
-from app.services.analyzer import RepositoryAnalyzer
+from app.services.repository_analyzer import RepositoryAnalyzer
+
 
 
 def print_analysis(file):
@@ -84,6 +86,28 @@ def main():
 
     for file in project.indexed_files:
         print_analysis(file)
+    print("\n")
+    print("=" * 80)
+    print("DEPENDENCY GRAPH")
+    print("=" * 80)
+    for dep in project.dependencies:
+
+     print(f"{dep.source}  ─────►  {dep.target}")
+    print("\n")
+    print("=" * 80)
+    print("REPOSITORY GRAPH")
+    print("=" * 80)
+
+    print(f"\nNodes: {len(project.graph.nodes)}")
+    print(f"Edges: {len(project.graph.edges)}")
+
+    for node in project.graph.nodes[:15]:
+     print(f"{node.type.value:<10} {node.name}")
+
+    print()
+
+    for edge in project.graph.edges[:20]:
+     print(f"{edge.source} --{edge.relation.value}--> {edge.target}") 
 
 
 if __name__ == "__main__":
