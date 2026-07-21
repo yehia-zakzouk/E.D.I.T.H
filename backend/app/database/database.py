@@ -1,12 +1,13 @@
 import sqlite3
 
+from app.core.config import config
 from app.database.schema import DatabaseSchema
 
 
 class DatabaseManager:
 
-    def __init__(self, db_path: str):
-        self.db_path = db_path
+    def __init__(self, db_path: str | None = None):
+        self.db_path = db_path or str(config.db_path)
         self.connection = None
 
     def connect(self):

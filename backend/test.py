@@ -2,7 +2,12 @@ from pathlib import Path
 
 from app.models.project import Project
 from app.database.database import DatabaseManager
-print(Project.model_fields.keys())
+if hasattr(Project, "model_fields"):
+    print(Project.model_fields.keys())
+elif hasattr(Project, "__fields__"):
+    print(Project.__fields__.keys())
+else:
+    print("Project has no model_fields or __fields__")
 from app.services.scanner import RepositoryScanner
 from app.services.detector import ProjectDetector
 from app.services.indexer import RepositoryIndexer

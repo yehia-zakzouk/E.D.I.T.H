@@ -51,6 +51,14 @@ class GraphBuilder:
                     )
                 )
 
+                graph.edges.append(
+                    GraphEdge(
+                        source=file_node.id,
+                        target=symbol_id,
+                        relation=EdgeType.CREATES
+                    )
+                )
+
             # Call graph edges
             for call in file.analysis.calls:
                 caller_id = f"{file.path}:{call.caller}"
@@ -71,6 +79,14 @@ class GraphBuilder:
                         source=caller_id,
                         target=callee_id,
                         relation=EdgeType.CALLS
+                    )
+                )
+
+                graph.edges.append(
+                    GraphEdge(
+                        source=caller_id,
+                        target=callee_id,
+                        relation=EdgeType.USES
                     )
                 )
 
@@ -116,6 +132,14 @@ class GraphBuilder:
                         source=file_node.id,
                         target=module_id,
                         relation=EdgeType.IMPORTS
+                    )
+                )
+
+                graph.edges.append(
+                    GraphEdge(
+                        source=file_node.id,
+                        target=module_id,
+                        relation=EdgeType.USES
                     )
                 )
 

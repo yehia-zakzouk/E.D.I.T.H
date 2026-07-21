@@ -1,7 +1,7 @@
 from dataclasses import asdict, dataclass, field
 from typing import Optional
 
-from app.models.symbol import Symbol, CallRelation, InheritanceRelation
+from app.models.symbol import Symbol, Parameter, CallRelation, InheritanceRelation
 
 
 @dataclass
@@ -58,7 +58,15 @@ class FileAnalysis:
             complexity=data.get("complexity", 0),
         )
 
-        analysis.symbols = [Symbol(**symbol_data) for symbol_data in data.get("symbols", [])]
+        analysis.symbols = []
+        for symbol_data in data.get("symbols", []):
+            parameters = [Parameter(**param_data) for param_data in symbol_data.get("parameters", [])]
+            symbol_data = {
+                **symbol_data,
+                "parameters": parameters,
+            }
+            analysis.symbols.append(Symbol(**symbol_data))
+
         analysis.calls = [CallRelation(**call_data) for call_data in data.get("calls", [])]
         analysis.inheritance_relations = [
             InheritanceRelation(**inheritance_data)

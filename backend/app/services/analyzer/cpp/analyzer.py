@@ -4,5 +4,8 @@ from app.models.file_analysis import FileAnalysis
 
 class CppAnalyzer(BaseAnalyzer):
 
-    def extract(self, source: str) -> FileAnalysis:
+    def parse(self, source: str):
+        return source
+
+    def extract(self, parsed: str) -> FileAnalysis:
         return FileAnalysis()

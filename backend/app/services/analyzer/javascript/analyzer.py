@@ -4,5 +4,8 @@ from app.models.file_analysis import FileAnalysis
 
 class JavaScriptAnalyzer(BaseAnalyzer):
 
-    def extract(self, source: str) -> FileAnalysis:
+    def parse(self, source: str):
+        return source
+
+    def extract(self, parsed: str) -> FileAnalysis:
         return FileAnalysis()

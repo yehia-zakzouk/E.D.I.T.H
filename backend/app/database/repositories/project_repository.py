@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Optional
 
+from app.core.config import logger
 from app.database.repositories.base_repository import BaseRepository
 from app.models.project import Project
 
@@ -16,7 +17,7 @@ class ProjectRepository(BaseRepository):
     def exists(self, path: str) -> bool:
         cursor = self.connection.cursor()
 
-        print("Checking path:", repr(path))
+        logger.debug("Checking path: %r", path)
 
         cursor.execute(
             """
@@ -29,14 +30,14 @@ class ProjectRepository(BaseRepository):
 
         result = cursor.fetchone()
 
-        print("Result:", result)
+        logger.debug("Result: %s", result)
 
         return result is not None
 
     def insert(self, project: Project) -> int:
         cursor = self.connection.cursor()
 
-        print("Inserting:", repr(str(project.root)))
+        logger.debug("Inserting: %s", str(project.root))
 
         cursor.execute(
             """

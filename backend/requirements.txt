@@ -1,0 +1,7 @@
+pydantic>=2
+pydantic-settings
+openai>=1.0.0
+fastapi>=0.110.0
+uvicorn
+websockets
+watchdog>=4.0.0

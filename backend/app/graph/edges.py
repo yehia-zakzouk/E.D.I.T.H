@@ -8,6 +8,8 @@ class EdgeType(str, Enum):
     IMPORTS = "imports"
     CALLS = "calls"
     INHERITS = "inherits"
+    USES = "uses"
+    CREATES = "creates"
     REFERENCES = "references"
 
 

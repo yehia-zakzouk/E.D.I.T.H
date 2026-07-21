@@ -19,6 +19,7 @@ class DatabaseSchema:
         self.create_inheritance_table()
         self.create_metrics_table()
         self.create_project_technologies_table()
+        self.create_history_tables()
         self.create_indexes()
 
         self.connection.commit()
@@ -86,7 +87,25 @@ class DatabaseSchema:
 
             kind TEXT NOT NULL,
 
+            file TEXT,
+
+            parent TEXT,
+
             line INTEGER,
+
+            end_line INTEGER,
+
+            column INTEGER,
+
+            return_type TEXT,
+
+            decorators TEXT,
+
+            type_hints TEXT,
+
+            parameters TEXT,
+
+            docstring TEXT,
 
             FOREIGN KEY(file_id)
                 REFERENCES files(id)
@@ -164,6 +183,150 @@ class DatabaseSchema:
                 ON DELETE CASCADE
         );
         """)
+
+    def create_history_tables(self):
+        cursor = self.connection.cursor()
+
+        # ── Review history (Sprint 8.1) ───────────────────────────
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS review_runs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_path TEXT NOT NULL,
+            project_name TEXT NOT NULL,
+            timestamp TEXT NOT NULL DEFAULT (datetime('now')),
+            overall_score REAL DEFAULT 0,
+            complexity REAL DEFAULT 0,
+            maintainability REAL DEFAULT 0,
+            readability REAL DEFAULT 0,
+            architecture REAL DEFAULT 0,
+            documentation REAL DEFAULT 0,
+            testing REAL DEFAULT 0,
+            total_files INTEGER DEFAULT 0,
+            total_lines INTEGER DEFAULT 0,
+            avg_complexity REAL DEFAULT 0,
+            avg_function_length REAL DEFAULT 0,
+            docstring_coverage REAL DEFAULT 0,
+            duplicate_blocks INTEGER DEFAULT 0,
+            summary TEXT DEFAULT ''
+        );
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS review_findings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            review_id INTEGER NOT NULL,
+            category TEXT NOT NULL,
+            severity TEXT NOT NULL DEFAULT 'info',
+            message TEXT NOT NULL,
+            recommendation TEXT DEFAULT '',
+            FOREIGN KEY(review_id)
+                REFERENCES review_runs(id)
+                ON DELETE CASCADE
+        );
+        """)
+
+        # ── Decision history (Sprint 8.3) ─────────────────────────
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS engineering_problems (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            problem_id INTEGER NOT NULL,
+            question TEXT NOT NULL,
+            goal TEXT NOT NULL DEFAULT '',
+            scope TEXT NOT NULL DEFAULT '',
+            complexity TEXT NOT NULL DEFAULT 'low',
+            risk TEXT NOT NULL DEFAULT 'low',
+            project_path TEXT DEFAULT '',
+            timestamp TEXT NOT NULL DEFAULT (datetime('now')),
+            chosen_candidate_id INTEGER,
+            summary TEXT DEFAULT ''
+        );
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS candidate_solutions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            candidate_id INTEGER NOT NULL,
+            problem_record_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT DEFAULT '',
+            reasoning TEXT DEFAULT '',
+            files_modified TEXT DEFAULT '',
+            estimated_tokens INTEGER DEFAULT 0,
+            estimated_runtime TEXT DEFAULT '',
+            estimated_memory TEXT DEFAULT '',
+            rank_score REAL DEFAULT 0,
+            was_chosen INTEGER DEFAULT 0,
+            generated_by TEXT DEFAULT 'mock',
+            timestamp TEXT NOT NULL DEFAULT (datetime('now')),
+            FOREIGN KEY(problem_record_id)
+                REFERENCES engineering_problems(id)
+                ON DELETE CASCADE
+        );
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS candidate_reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            candidate_solution_id INTEGER NOT NULL,
+            overall_score REAL DEFAULT 0,
+            complexity_score REAL DEFAULT 0,
+            maintainability_score REAL DEFAULT 0,
+            readability_score REAL DEFAULT 0,
+            architecture_score REAL DEFAULT 0,
+            documentation_score REAL DEFAULT 0,
+            review_data TEXT DEFAULT '',
+            timestamp TEXT NOT NULL DEFAULT (datetime('now')),
+            FOREIGN KEY(candidate_solution_id)
+                REFERENCES candidate_solutions(id)
+                ON DELETE CASCADE
+        );
+        """)
+
+        # ── User preferences (Sprint 8.6) ─────────────────────────
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_preferences (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            dimension TEXT NOT NULL UNIQUE,
+            preference_weight REAL NOT NULL DEFAULT 0.5,
+            sample_count INTEGER NOT NULL DEFAULT 0,
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        """)
+
+        # ── Engineering knowledge base (Sprint 8.4) ────────────────
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS knowledge_entries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            topic TEXT NOT NULL,
+            category TEXT NOT NULL DEFAULT 'general',
+            observation TEXT NOT NULL,
+            confidence REAL NOT NULL DEFAULT 1.0,
+            sample_count INTEGER NOT NULL DEFAULT 1,
+            pattern_data TEXT DEFAULT '',
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        """)
+
+        # ── Repository health snapshots (Sprint 8.7) ──────────────
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS health_snapshots (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_path TEXT NOT NULL,
+            overall_score REAL DEFAULT 0,
+            complexity REAL DEFAULT 0,
+            maintainability REAL DEFAULT 0,
+            readability REAL DEFAULT 0,
+            architecture REAL DEFAULT 0,
+            documentation REAL DEFAULT 0,
+            testing REAL DEFAULT 0,
+            technical_debt_estimate REAL DEFAULT 0,
+            snapshot_date TEXT NOT NULL DEFAULT (datetime('now')),
+            notes TEXT DEFAULT ''
+        );
+        """)
+
+        self.connection.commit()
 
     def create_metrics_table(self):
         cursor = self.connection.cursor()

@@ -1,6 +1,7 @@
 from pathlib import Path
 import hashlib
 
+from app.core.config import config
 from app.models.file_index import FileIndex
 
 
@@ -9,8 +10,8 @@ class FileParser:
     def parse(self, file: Path) -> FileIndex:
 
         text = file.read_text(
-            encoding="utf-8",
-            errors="ignore"
+            encoding=config.parser.encoding,
+            errors=config.parser.errors,
         )
 
         file_hash = hashlib.sha256(

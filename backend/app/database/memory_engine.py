@@ -15,7 +15,7 @@ from app.models.file_index import FileIndex
 from app.models.file_analysis import FileAnalysis
 from app.models.relationship import Relationship
 from app.models.dependency import Dependency
-from app.models.symbol import CallRelation, InheritanceRelation
+from app.models.symbol import Symbol, Parameter, CallRelation, InheritanceRelation
 
 
 class MemoryEngine:
@@ -115,13 +115,33 @@ class MemoryEngine:
             if file.analysis is None:
                 continue
 
+            file_path = file.path.as_posix()
             symbols = []
-            for name in file.analysis.classes:
-                symbols.append((name, "class", None))
-            for name in file.analysis.functions:
-                symbols.append((name, "function", None))
-            for name in file.analysis.methods:
-                symbols.append((name, "method", None))
+            for symbol in file.analysis.symbols:
+                symbols.append(
+                    (
+                        symbol.qualified_name,
+                        symbol.kind,
+                        symbol.file or file_path,
+                        symbol.parent,
+                        symbol.line,
+                        symbol.end_line,
+                        symbol.column,
+                        symbol.return_type,
+                        symbol.decorators,
+                        symbol.type_hints,
+                        [
+                            {
+                                "name": param.name,
+                                "annotation": param.annotation,
+                                "default": param.default,
+                                "kind": param.kind,
+                            }
+                            for param in symbol.parameters
+                        ],
+                        symbol.docstring,
+                    )
+                )
 
             self.symbol_repo.save_many(file.id, symbols)
 
@@ -244,13 +264,31 @@ class MemoryEngine:
             if file.analysis is None:
                 file.analysis = FileAnalysis()
 
-            for name, kind, _ in symbols:
+            for name, kind, file_path, parent, line, end_line, column, return_type, decorators, type_hints, parameters, docstring in symbols:
                 if kind == "class" and name not in file.analysis.classes:
                     file.analysis.classes.append(name)
                 elif kind == "function" and name not in file.analysis.functions:
                     file.analysis.functions.append(name)
                 elif kind == "method" and name not in file.analysis.methods:
                     file.analysis.methods.append(name)
+
+                file.analysis.symbols.append(
+                    Symbol(
+                        name=name.split(".")[-1],
+                        qualified_name=name,
+                        kind=kind,
+                        file=file_path,
+                        parent=parent,
+                        line=line or 0,
+                        end_line=end_line,
+                        column=column,
+                        return_type=return_type,
+                        decorators=decorators,
+                        type_hints=type_hints,
+                        parameters=[Parameter(**param) for param in parameters],
+                        docstring=docstring,
+                    )
+                )
 
     def _load_file_calls(self, files: list[FileIndex]):
         for file in files:

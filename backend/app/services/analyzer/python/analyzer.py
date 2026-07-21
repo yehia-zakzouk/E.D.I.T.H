@@ -2,7 +2,7 @@ import ast
 
 from app.services.analyzer.base import BaseAnalyzer
 from app.models.file_analysis import FileAnalysis
-from app.models.symbol import Symbol, CallRelation, InheritanceRelation
+from app.models.symbol import Symbol, Parameter, CallRelation, InheritanceRelation
 
 
 class PythonAnalyzer(ast.NodeVisitor, BaseAnalyzer):
@@ -13,15 +13,17 @@ class PythonAnalyzer(ast.NodeVisitor, BaseAnalyzer):
         self.current_function = None
         self.scope_stack: list[str] = []
 
-    def extract(self, source: str) -> FileAnalysis:
+    def parse(self, source: str) -> ast.AST:
+        return ast.parse(source)
+
+    def extract(self, parsed: ast.AST) -> FileAnalysis:
         self.analysis = FileAnalysis()
         self.current_class = None
         self.current_function = None
         self.scope_stack = []
 
-        tree = ast.parse(source)
-        self.analysis.module_docstring = ast.get_docstring(tree)
-        self.visit(tree)
+        self.analysis.module_docstring = ast.get_docstring(parsed)
+        self.visit(parsed)
 
         return self.analysis
 
@@ -66,7 +68,10 @@ class PythonAnalyzer(ast.NodeVisitor, BaseAnalyzer):
             name=node.name,
             qualified_name=node.name,
             kind="class",
+            file="",
             line=node.lineno,
+            end_line=getattr(node, "end_lineno", None),
+            column=getattr(node, "col_offset", None),
             docstring=ast.get_docstring(node),
             decorators=[self._expr_to_name(deco) for deco in node.decorator_list if self._expr_to_name(deco)],
             bases=[self._expr_to_name(base) for base in node.bases if self._expr_to_name(base)],
@@ -117,11 +122,16 @@ class PythonAnalyzer(ast.NodeVisitor, BaseAnalyzer):
             name=node.name,
             qualified_name=qualified_name,
             kind="async_method" if async_def and self.current_class else "async_function" if async_def else "method" if self.current_class else "function",
+            file="",
             line=node.lineno,
+            end_line=getattr(node, "end_lineno", None),
+            column=getattr(node, "col_offset", None),
+            parent=self.current_class,
             docstring=ast.get_docstring(node),
             decorators=[self._expr_to_name(deco) for deco in node.decorator_list if self._expr_to_name(deco)],
+            return_type=self._annotation_to_string(node.returns) if getattr(node, "returns", None) is not None else None,
             type_hints=self._collect_type_hints(node, return_list=True),
-            parent=self.current_class,
+            parameters=self._collect_parameters(node),
         )
         self.analysis.symbols.append(symbol)
 
@@ -209,6 +219,68 @@ class PythonAnalyzer(ast.NodeVisitor, BaseAnalyzer):
                 self.analysis.type_hints.append(hint)
 
         return hints
+
+    def _collect_parameters(self, node):
+        parameters = []
+        args = list(getattr(node.args, "args", []))
+        defaults = list(getattr(node.args, "defaults", []))
+        kwonlyargs = list(getattr(node.args, "kwonlyargs", []))
+        kw_defaults = list(getattr(node.args, "kw_defaults", []))
+
+        def parse_default(default_node):
+            if default_node is None:
+                return None
+            try:
+                return ast.unparse(default_node)
+            except Exception:
+                return None
+
+        default_start = len(args) - len(defaults)
+        for index, arg in enumerate(args):
+            default = None
+            if index >= default_start:
+                default = parse_default(defaults[index - default_start])
+            annotation = self._annotation_to_string(arg.annotation) if arg.annotation is not None else None
+            parameters.append(Parameter(
+                name=arg.arg,
+                annotation=annotation,
+                default=default,
+                kind="positional_or_keyword",
+            ))
+
+        if getattr(node.args, "vararg", None) is not None:
+            vararg = node.args.vararg
+            annotation = self._annotation_to_string(vararg.annotation) if vararg.annotation is not None else None
+            parameters.append(Parameter(
+                name=f"*{vararg.arg}",
+                annotation=annotation,
+                default=None,
+                kind="vararg",
+            ))
+
+        for index, arg in enumerate(kwonlyargs):
+            default = None
+            if index < len(kw_defaults):
+                default = parse_default(kw_defaults[index])
+            annotation = self._annotation_to_string(arg.annotation) if arg.annotation is not None else None
+            parameters.append(Parameter(
+                name=arg.arg,
+                annotation=annotation,
+                default=default,
+                kind="keyword_only",
+            ))
+
+        if getattr(node.args, "kwarg", None) is not None:
+            kwarg = node.args.kwarg
+            annotation = self._annotation_to_string(kwarg.annotation) if kwarg.annotation is not None else None
+            parameters.append(Parameter(
+                name=f"**{kwarg.arg}",
+                annotation=annotation,
+                default=None,
+                kind="kwarg",
+            ))
+
+        return parameters
 
     def _collect_bases(self, node):
         for base in node.bases:
